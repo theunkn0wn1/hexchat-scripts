@@ -2023,11 +2023,7 @@ def cmd_export(event, items, is_all=None, **unused):
     result = [alert.export_dict() for alert in items.values()]
     if len(result) == 1:
         result = result[0]
-    print(json.dumps(result, separators=(',', ':')).replace("\"", "---"))
-    #print(pickle.dumps(result))
-    # pickled = codecs.encode(pickle.dumps(result), "base64").decode()
-    # pickled = pickle.dumps(result,0).decode()
-    # print(r"copy:{}".format(pickled))
+    print(json.dumps(result, separators=(',', ':')).replace("\"", "---"))  # apply magic and print to console
 @command("share", help="<alerts...>: Share selected alert(s) on current IRC channel.")
 def cmd_share(event, *names):
     if not names:
@@ -2056,17 +2052,10 @@ def cmd_share(event, *names):
 def cmd_import(event, data:str, unknown_extra= None):
     print("unknown_extra= {}".format(unknown_extra))
     try:
-        decoded_data = data.replace('---',"\"")
-        # result = pickle.loads(decoded_data)
-        print("data={}".format(data))
-        print("decoded_data = {}".format(decoded_data))
-        result = json.loads(decoded_data)
-
-
-        # result = None  # fixme
+        decoded_data = data.replace('---',"\"")  # undo the magic
+        result = json.loads(decoded_data)  # and read as plain text JSON
     except Exception as ex:
         print("Failed to import:", str(ex))
-        raise ex
         return False
 
     if not isinstance(result, list):
