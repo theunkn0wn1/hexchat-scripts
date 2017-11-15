@@ -211,8 +211,6 @@ try:
     from collections.abc import Iterable
 except ImportError:
     from collections import Iterable
-
-
 class Plugin:
     # Try to collect all of our global state under one roof.
 
@@ -1452,6 +1450,7 @@ def command(name, collect=False, help="", requires_alert=False, raw=False):
                         raise InvalidCommandException("Incorrect number of arguments")
                     if max_args is not None:
                         if collect and ct >= max_args:
+                            print("collect: max_args = {}\nlen(event.word_eol) = {}".format(max_args, len(event.word_eol)))
                             args = list(event.words[:max_args - 1])
                             args.append(event.word_eol[max_args - 1])
                         elif max_args < ct:
@@ -2024,9 +2023,11 @@ def cmd_export(event, items, is_all=None, **unused):
     result = [alert.export_dict() for alert in items.values()]
     if len(result) == 1:
         result = result[0]
-    print(json.dumps(result, separators=(',', ':')))
-
-
+    print(json.dumps(result, separators=(',', ':')).replace("\"", "---"))
+    #print(pickle.dumps(result))
+    # pickled = codecs.encode(pickle.dumps(result), "base64").decode()
+    # pickled = pickle.dumps(result,0).decode()
+    # print(r"copy:{}".format(pickled))
 @command("share", help="<alerts...>: Share selected alert(s) on current IRC channel.")
 def cmd_share(event, *names):
     if not names:
@@ -2052,11 +2053,20 @@ def cmd_share(event, *names):
 
 
 @command("import", help="<json>: Import JSON data.", collect=True)
-def cmd_import(event, data):
+def cmd_import(event, data:str, unknown_extra= None):
+    print("unknown_extra= {}".format(unknown_extra))
     try:
-        result = json.loads(data)
+        decoded_data = data.replace('---',"\"")
+        # result = pickle.loads(decoded_data)
+        print("data={}".format(data))
+        print("decoded_data = {}".format(decoded_data))
+        result = json.loads(decoded_data)
+
+
+        # result = None  # fixme
     except Exception as ex:
         print("Failed to import:", str(ex))
+        raise ex
         return False
 
     if not isinstance(result, list):
