@@ -262,7 +262,7 @@ class Plugin:
     def save(self):
         """Save alerts data"""
         data = list(alert.export_dict() for alert in self.alerts.values())
-        hexchat.set_pluginpref("python_alerts_saved", json.dumps(data))
+        hexchat.set_pluginpref("python_alerts_saved", json.dumps(data).replace("\"", "---"))
 
     def load(self):
         """Load alerts data"""
@@ -270,7 +270,7 @@ class Plugin:
         if data is None:
             return
         try:
-            result = json.loads(data)
+            result = json.loads(data.replace("---", "\""))
         except Exception as ex:
             print("Failed to load alerts:", str(ex))
             return False
