@@ -1052,7 +1052,7 @@ class Alert(object):
         nick = self.format_line(event.rawnick)
         message = self.format_line(message)
 
-        hexchat.emit_print(event.event, nick, message, *event.words[2:])
+        hexchat.emit_print(event.event, nick, message, *event.words[1:])
 
         if self.abs_sound is not None and not self.mute:
             plugin.playsound(self.abs_sound)
