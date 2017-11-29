@@ -211,8 +211,6 @@ try:
     from collections.abc import Iterable
 except ImportError:
     from collections import Iterable
-
-
 class Plugin:
     # Try to collect all of our global state under one roof.
 
@@ -264,7 +262,7 @@ class Plugin:
     def save(self):
         """Save alerts data"""
         data = list(alert.export_dict() for alert in self.alerts.values())
-        hexchat.set_pluginpref("python_alerts_saved", json.dumps(data))
+        hexchat.set_pluginpref("python_alerts_saved", json.dumps(data).replace("\"", "---"))
 
     def load(self):
         """Load alerts data"""
@@ -272,7 +270,7 @@ class Plugin:
         if data is None:
             return
         try:
-            result = json.loads(data)
+            result = json.loads(data.replace("---", "\""))
         except Exception as ex:
             print("Failed to load alerts:", str(ex))
             return False
@@ -1054,7 +1052,7 @@ class Alert(object):
         nick = self.format_line(event.rawnick)
         message = self.format_line(message)
 
-        hexchat.emit_print(event.event, nick, message, *event.words[2:])
+        hexchat.emit_print(event.event, nick, message, *event.words[1:])
 
         if self.abs_sound is not None and not self.mute:
             plugin.playsound(self.abs_sound)
@@ -1452,6 +1450,7 @@ def command(name, collect=False, help="", requires_alert=False, raw=False):
                         raise InvalidCommandException("Incorrect number of arguments")
                     if max_args is not None:
                         if collect and ct >= max_args:
+                            print("collect: max_args = {}\nlen(event.word_eol) = {}".format(max_args, len(event.word_eol)))
                             args = list(event.words[:max_args - 1])
                             args.append(event.word_eol[max_args - 1])
                         elif max_args < ct:
@@ -2024,9 +2023,7 @@ def cmd_export(event, items, is_all=None, **unused):
     result = [alert.export_dict() for alert in items.values()]
     if len(result) == 1:
         result = result[0]
-    print(json.dumps(result, separators=(',', ':')))
-
-
+    print(json.dumps(result, separators=(',', ':')).replace("\"", "---"))  # apply magic and print to console
 @command("share", help="<alerts...>: Share selected alert(s) on current IRC channel.")
 def cmd_share(event, *names):
     if not names:
@@ -2052,9 +2049,11 @@ def cmd_share(event, *names):
 
 
 @command("import", help="<json>: Import JSON data.", collect=True)
-def cmd_import(event, data):
+def cmd_import(event, data:str, unknown_extra= None):
+    print("unknown_extra= {}".format(unknown_extra))
     try:
-        result = json.loads(data)
+        decoded_data = data.replace('---',"\"")  # undo the magic
+        result = json.loads(decoded_data)  # and read as plain text JSON
     except Exception as ex:
         print("Failed to import:", str(ex))
         return False
